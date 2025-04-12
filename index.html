@@ -1,0 +1,670 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/leaflet-search.css">
+        <link rel="stylesheet" href="css/filter.css">
+<link rel="stylesheet" href="css/nouislider.min.css">
+        <link rel="stylesheet" href="css/leaflet-measure.css">
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        </style>
+        <title>day la ban do phan bo chua o tinh soc trang boi tai</title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet-measure.js"></script>
+        <script src="js/leaflet-search.js"></script>
+        <script src="js/tailDT.js"></script>
+<script src="js/nouislider.min.js"></script>
+<script src="js/wNumb.js"></script>
+        <script src="data/TNHSCTRNG_1.js"></script>
+        <script src="data/khoantukhoang_tu_2.js"></script>
+        <script src="data/cachuyenphan_hang_3.js"></script>
+        <script>
+        var highlightLayer;
+        function highlightFeature(e) {
+            highlightLayer = e.target;
+
+            if (e.target.feature.geometry.type === 'LineString' || e.target.feature.geometry.type === 'MultiLineString') {
+              highlightLayer.setStyle({
+                color: '#ffff00',
+              });
+            } else {
+              highlightLayer.setStyle({
+                fillColor: '#ffff00',
+                fillOpacity: 1
+              });
+            }
+        }
+        var map = L.map('map', {
+            zoomControl:false, maxZoom:28, minZoom:1
+        }).fitBounds([[9.299597084107518,105.61000835388602],[9.590423415007535,106.23781604772309]]);
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        // remove popup's row if "visible-with-data"
+        function removeEmptyRowsFromPopupContent(content, feature) {
+         var tempDiv = document.createElement('div');
+         tempDiv.innerHTML = content;
+         var rows = tempDiv.querySelectorAll('tr');
+         for (var i = 0; i < rows.length; i++) {
+             var td = rows[i].querySelector('td.visible-with-data');
+             var key = td ? td.id : '';
+             if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                 rows[i].parentNode.removeChild(rows[i]);
+             }
+         }
+         return tempDiv.innerHTML;
+        }
+        // add class to format popup if it contains media
+		function addClassToPopupIfMedia(content, popup) {
+			var tempDiv = document.createElement('div');
+			tempDiv.innerHTML = content;
+			if (tempDiv.querySelector('td img')) {
+				popup._contentNode.classList.add('media');
+					// Delay to force the redraw
+					setTimeout(function() {
+						popup.update();
+					}, 10);
+			} else {
+				popup._contentNode.classList.remove('media');
+			}
+		}
+        var title = new L.Control({'position':'bottomright'});
+        title.onAdd = function (map) {
+            this._div = L.DomUtil.create('div', 'info');
+            this.update();
+            return this._div;
+        };
+        title.update = function () {
+            this._div.innerHTML = '<h2>day la ban do phan bo chua o tinh soc trang boi tai</h2>';
+        };
+        title.addTo(map);
+        var abstract = new L.Control({'position':'topright'});
+        abstract.onAdd = function (map) {
+            this._div = L.DomUtil.create('div',
+            'leaflet-control abstract');
+            this._div.id = 'abstract'
+
+                abstract.show();
+                return this._div;
+            };
+            abstract.show = function () {
+                this._div.classList.remove("abstract");
+                this._div.classList.add("abstractUncollapsed");
+                this._div.innerHTML = 'day la ban do phan bo chua o tinh soc trang boi tai';
+        };
+        abstract.addTo(map);
+        var zoomControl = L.control.zoom({
+            position: 'topleft'
+        }).addTo(map);
+        var measureControl = new L.Control.Measure({
+            position: 'topleft',
+            primaryLengthUnit: 'feet',
+            secondaryLengthUnit: 'miles',
+            primaryAreaUnit: 'sqfeet',
+            secondaryAreaUnit: 'sqmiles'
+        });
+        measureControl.addTo(map);
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].innerHTML = '';
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].className += ' fas fa-ruler';
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+        }
+        map.createPane('pane_GoogleSatellite_0');
+        map.getPane('pane_GoogleSatellite_0').style.zIndex = 400;
+        var layer_GoogleSatellite_0 = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            pane: 'pane_GoogleSatellite_0',
+            opacity: 1.0,
+            attribution: '<a href="https://www.google.at/permissions/geoguidelines/attr-guide.html">Map data ©2015 Google</a>',
+            minZoom: 1,
+            maxZoom: 28,
+            minNativeZoom: 0,
+            maxNativeZoom: 20
+        });
+        layer_GoogleSatellite_0;
+        map.addLayer(layer_GoogleSatellite_0);
+        function pop_TNHSCTRNG_1(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['ID_0'] !== null ? autolinker.link(String(feature.properties['ID_0']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['ISO'] !== null ? autolinker.link(String(feature.properties['ISO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NAME_0'] !== null ? autolinker.link(String(feature.properties['NAME_0']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['ID_1'] !== null ? autolinker.link(String(feature.properties['ID_1']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NAME_1'] !== null ? autolinker.link(String(feature.properties['NAME_1']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['ID_2'] !== null ? autolinker.link(String(feature.properties['ID_2']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NAME_2'] !== null ? autolinker.link(String(feature.properties['NAME_2']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['TYPE_2'] !== null ? autolinker.link(String(feature.properties['TYPE_2']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['ENGTYPE_2'] !== null ? autolinker.link(String(feature.properties['ENGTYPE_2']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NL_NAME_2'] !== null ? autolinker.link(String(feature.properties['NL_NAME_2']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['VARNAME_2'] !== null ? autolinker.link(String(feature.properties['VARNAME_2']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_TNHSCTRNG_1_0() {
+            return {
+                pane: 'pane_TNHSCTRNG_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(205,205,205,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_TNHSCTRNG_1');
+        map.getPane('pane_TNHSCTRNG_1').style.zIndex = 401;
+        map.getPane('pane_TNHSCTRNG_1').style['mix-blend-mode'] = 'normal';
+        var layer_TNHSCTRNG_1 = new L.geoJson(json_TNHSCTRNG_1, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_TNHSCTRNG_1',
+            layerName: 'layer_TNHSCTRNG_1',
+            pane: 'pane_TNHSCTRNG_1',
+            onEachFeature: pop_TNHSCTRNG_1,
+            style: style_TNHSCTRNG_1_0,
+        });
+        bounds_group.addLayer(layer_TNHSCTRNG_1);
+        map.addLayer(layer_TNHSCTRNG_1);
+        function pop_khoantukhoang_tu_2(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(String(feature.properties['fid']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['ID'] !== null ? autolinker.link(String(feature.properties['ID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Name Pagod'] !== null ? autolinker.link(String(feature.properties['Name Pagod']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Name Khme'] !== null ? autolinker.link(String(feature.properties['Name Khme']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['VietNam Na'] !== null ? autolinker.link(String(feature.properties['VietNam Na']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Year'] !== null ? autolinker.link(String(feature.properties['Year']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Location'] !== null ? autolinker.link(String(feature.properties['Location']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['X'] !== null ? autolinker.link(String(feature.properties['X']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Y'] !== null ? autolinker.link(String(feature.properties['Y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Link'] !== null ? autolinker.link(String(feature.properties['Link']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['tuổi ch�'] !== null ? autolinker.link(String(feature.properties['tuổi ch�']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['khoảg tu'] !== null ? autolinker.link(String(feature.properties['khoảg tu']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['phân hạ'] !== null ? autolinker.link(String(feature.properties['phân hạ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['tỉnh, hu'] !== null ? autolinker.link(String(feature.properties['tỉnh, hu']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_khoantukhoang_tu_2_0() {
+            return {
+                pane: 'pane_khoantukhoang_tu_2',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(141,90,153,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_khoantukhoang_tu_2');
+        map.getPane('pane_khoantukhoang_tu_2').style.zIndex = 402;
+        map.getPane('pane_khoantukhoang_tu_2').style['mix-blend-mode'] = 'normal';
+        var layer_khoantukhoang_tu_2 = new L.geoJson(json_khoantukhoang_tu_2, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_khoantukhoang_tu_2',
+            layerName: 'layer_khoantukhoang_tu_2',
+            pane: 'pane_khoantukhoang_tu_2',
+            onEachFeature: pop_khoantukhoang_tu_2,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_khoantukhoang_tu_2_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_khoantukhoang_tu_2);
+        map.addLayer(layer_khoantukhoang_tu_2);
+        function pop_cachuyenphan_hang_3(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(String(feature.properties['fid']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['ID'] !== null ? autolinker.link(String(feature.properties['ID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Name Pagod'] !== null ? autolinker.link(String(feature.properties['Name Pagod']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Name Khme'] !== null ? autolinker.link(String(feature.properties['Name Khme']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['VietNam Na'] !== null ? autolinker.link(String(feature.properties['VietNam Na']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Year'] !== null ? autolinker.link(String(feature.properties['Year']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Location'] !== null ? autolinker.link(String(feature.properties['Location']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['X'] !== null ? autolinker.link(String(feature.properties['X']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Y'] !== null ? autolinker.link(String(feature.properties['Y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Link'] !== null ? autolinker.link(String(feature.properties['Link']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['tuổi ch�'] !== null ? autolinker.link(String(feature.properties['tuổi ch�']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['khoảg tu'] !== null ? autolinker.link(String(feature.properties['khoảg tu']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['phân hạ'] !== null ? autolinker.link(String(feature.properties['phân hạ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['tỉnh, hu'] !== null ? autolinker.link(String(feature.properties['tỉnh, hu']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_cachuyenphan_hang_3_0() {
+            return {
+                pane: 'pane_cachuyenphan_hang_3',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(231,113,72,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_cachuyenphan_hang_3');
+        map.getPane('pane_cachuyenphan_hang_3').style.zIndex = 403;
+        map.getPane('pane_cachuyenphan_hang_3').style['mix-blend-mode'] = 'normal';
+        var layer_cachuyenphan_hang_3 = new L.geoJson(json_cachuyenphan_hang_3, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_cachuyenphan_hang_3',
+            layerName: 'layer_cachuyenphan_hang_3',
+            pane: 'pane_cachuyenphan_hang_3',
+            onEachFeature: pop_cachuyenphan_hang_3,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_cachuyenphan_hang_3_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_cachuyenphan_hang_3);
+        map.addLayer(layer_cachuyenphan_hang_3);
+        var overlaysTree = [
+            {label: '<img src="legend/cachuyenphan_hang_3.png" /> cac huyen — phan_hang', layer: layer_cachuyenphan_hang_3},
+            {label: '<img src="legend/khoantukhoang_tu_2.png" /> khoan tu — khoang_tu', layer: layer_khoantukhoang_tu_2},
+            {label: '<img src="legend/TNHSCTRNG_1.png" /> TỈNH SÓC TRĂNG', layer: layer_TNHSCTRNG_1},
+            {label: "Google Satellite", layer: layer_GoogleSatellite_0},]
+        var lay = L.control.layers.tree(null, overlaysTree,{
+            //namedToggle: true,
+            //selectorBack: false,
+            //closedSymbol: '&#8862; &#x1f5c0;',
+            //openedSymbol: '&#8863; &#x1f5c1;',
+            //collapseAll: 'Collapse all',
+            //expandAll: 'Expand all',
+            collapsed: true,
+        });
+        lay.addTo(map);
+        setBounds();
+        map.addControl(new L.Control.Search({
+            layer: layer_cachuyenphan_hang_3,
+            initial: false,
+            hideMarkerOnCollapse: true,
+            propertyName: 'khoảg tu'}));
+        document.getElementsByClassName('search-button')[0].className +=
+         ' fa fa-binoculars';
+        var mapDiv = document.getElementById('map');
+        var row = document.createElement('div');
+        row.className="row";
+        row.id="all";
+        row.style.height = "100%";
+        var col1 = document.createElement('div');
+        col1.className="col9";
+        col1.id = "mapWindow";
+        col1.style.height = "99%";
+        col1.style.width = "80%";
+        col1.style.display = "inline-block";
+        var col2 = document.createElement('div');
+        col2.className="col3";
+        col2.id = "menu";
+        col2.style.display = "inline-block";
+        mapDiv.parentNode.insertBefore(row, mapDiv);
+        document.getElementById("all").appendChild(col1);
+        document.getElementById("all").appendChild(col2);
+        col1.appendChild(mapDiv)
+        var Filters = {"khoảg tu": "str","tỉnh, hu": "str","phân hạ": "str"};
+        function filterFunc() {
+          map.eachLayer(function(lyr){
+          if ("options" in lyr && "dataVar" in lyr["options"]){
+            features = this[lyr["options"]["dataVar"]].features.slice(0);
+            try{
+              for (key in Filters){
+                keyS = key.replace(/[^a-zA-Z0-9_]/g, "")
+                if (Filters[key] == "str" || Filters[key] == "bool"){
+                  var selection = [];
+                  var options = document.getElementById("sel_" + keyS).options
+                  for (var i=0; i < options.length; i++) {
+                    if (options[i].selected) selection.push(options[i].value);
+                  }
+                    try{
+                      if (key in features[0].properties){
+                        for (i = features.length - 1;
+                          i >= 0; --i){
+                          if (selection.indexOf(
+                          features[i].properties[key])<0
+                          && selection.length>0) {
+                          features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                  }
+                }
+                if (Filters[key] == "int"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (parseInt(features[i].properties[key])
+                          < sliderVals[0]
+                          || parseInt(features[i].properties[key])
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "real"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (features[i].properties[key]
+                          < sliderVals[0]
+                          || features[i].properties[key]
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "date"
+                  || Filters[key] == "datetime"
+                  || Filters[key] == "time"){
+                  try{
+                    if (key in features[0].properties){
+                      HTMLkey = key.replace(/[&\/\\#,+()$~%.'":*?<>{} ]/g, '');
+                      startdate = document.getElementById("dat_" +
+                        HTMLkey + "_date1").value.replace(" ", "T");
+                      enddate = document.getElementById("dat_" +
+                        HTMLkey + "_date2").value.replace(" ", "T");
+                      for (i = features.length - 1; i >= 0; --i){
+                        if (features[i].properties[key] < startdate
+                          || features[i].properties[key] > enddate){
+                          features.splice(i,1);
+                        }
+                      }
+                    }
+                  } catch(err){
+                  }
+                }
+              }
+            } catch(err){
+            }
+          this[lyr["options"]["layerName"]].clearLayers();
+          this[lyr["options"]["layerName"]].addData(features);
+          }
+          })
+        }
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_khogtu = document.createElement('div');
+            div_khogtu.id = "div_khogtu";
+            div_khogtu.className= "filterselect";
+            document.getElementById("menu").appendChild(div_khogtu);
+            sel_khogtu = document.createElement('select');
+            sel_khogtu.multiple = true;
+            sel_khogtu.size = 5;
+            sel_khogtu.id = "sel_khogtu";
+            var khogtu_options_str = "<option value='' unselected></option>";
+            sel_khogtu.onchange = function(){filterFunc()};
+            khogtu_options_str  += '<option value="100-300">100-300</option>';
+            khogtu_options_str  += '<option value="300-500">300-500</option>';
+            khogtu_options_str  += '<option value="50-100">50-100</option>';
+            khogtu_options_str  += '<option value="< 50">< 50</option>';
+            khogtu_options_str  += '<option value="> 500">> 500</option>';
+            sel_khogtu.innerHTML = khogtu_options_str;
+            div_khogtu.appendChild(sel_khogtu);
+            var lab_khogtu = document.createElement('div');
+            lab_khogtu.innerHTML = 'khoảg tu';
+            lab_khogtu.className = 'filterlabel';
+            div_khogtu.appendChild(lab_khogtu);
+            var reset_khogtu = document.createElement('div');
+            reset_khogtu.innerHTML = 'clear filter';
+            reset_khogtu.className = 'filterlabel';
+            reset_khogtu.onclick = function() {
+                var options = document.getElementById("sel_khogtu").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_khogtu.appendChild(reset_khogtu);
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_tnhhu = document.createElement('div');
+            div_tnhhu.id = "div_tnhhu";
+            div_tnhhu.className= "filterselect";
+            document.getElementById("menu").appendChild(div_tnhhu);
+            sel_tnhhu = document.createElement('select');
+            sel_tnhhu.multiple = true;
+            sel_tnhhu.size = 10;
+            sel_tnhhu.id = "sel_tnhhu";
+            var tnhhu_options_str = "<option value='' unselected></option>";
+            sel_tnhhu.onchange = function(){filterFunc()};
+            tnhhu_options_str  += '<option value="châu thành">châu thành</option>';
+            tnhhu_options_str  += '<option value="cù lao dug">cù lao dug</option>';
+            tnhhu_options_str  += '<option value="kê sách">kê sách</option>';
+            tnhhu_options_str  += '<option value="long phú">long phú</option>';
+            tnhhu_options_str  += '<option value="mỹ tú">mỹ tú</option>';
+            tnhhu_options_str  += '<option value="mỹ xuyên">mỹ xuyên</option>';
+            tnhhu_options_str  += '<option value="ngã năm">ngã năm</option>';
+            tnhhu_options_str  += '<option value="thạnh trị">thạnh trị</option>';
+            tnhhu_options_str  += '<option value="tp st">tp st</option>';
+            tnhhu_options_str  += '<option value="trần đề">trần đề</option>';
+            tnhhu_options_str  += '<option value="vĩnh châu">vĩnh châu</option>';
+            sel_tnhhu.innerHTML = tnhhu_options_str;
+            div_tnhhu.appendChild(sel_tnhhu);
+            var lab_tnhhu = document.createElement('div');
+            lab_tnhhu.innerHTML = 'tỉnh, hu';
+            lab_tnhhu.className = 'filterlabel';
+            div_tnhhu.appendChild(lab_tnhhu);
+            var reset_tnhhu = document.createElement('div');
+            reset_tnhhu.innerHTML = 'clear filter';
+            reset_tnhhu.className = 'filterlabel';
+            reset_tnhhu.onclick = function() {
+                var options = document.getElementById("sel_tnhhu").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_tnhhu.appendChild(reset_tnhhu);
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_phnh = document.createElement('div');
+            div_phnh.id = "div_phnh";
+            div_phnh.className= "filterselect";
+            document.getElementById("menu").appendChild(div_phnh);
+            sel_phnh = document.createElement('select');
+            sel_phnh.multiple = true;
+            sel_phnh.size = 3;
+            sel_phnh.id = "sel_phnh";
+            var phnh_options_str = "<option value='' unselected></option>";
+            sel_phnh.onchange = function(){filterFunc()};
+            phnh_options_str  += '<option value="XH Quốc Gi">XH Quốc Gi</option>';
+            phnh_options_str  += '<option value="XH tỉnh">XH tỉnh</option>';
+            phnh_options_str  += '<option value="chưa XH">chưa XH</option>';
+            sel_phnh.innerHTML = phnh_options_str;
+            div_phnh.appendChild(sel_phnh);
+            var lab_phnh = document.createElement('div');
+            lab_phnh.innerHTML = 'phân hạ';
+            lab_phnh.className = 'filterlabel';
+            div_phnh.appendChild(lab_phnh);
+            var reset_phnh = document.createElement('div');
+            reset_phnh.innerHTML = 'clear filter';
+            reset_phnh.className = 'filterlabel';
+            reset_phnh.onclick = function() {
+                var options = document.getElementById("sel_phnh").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_phnh.appendChild(reset_phnh);
+        </script>
+    </body>
+</html>
